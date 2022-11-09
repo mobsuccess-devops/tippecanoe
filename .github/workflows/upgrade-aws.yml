@@ -63,18 +63,3 @@ jobs:
         run: docker build -t 983851922138.dkr.ecr.eu-central-1.amazonaws.com/tippecanoe:latest .
       - name: Push
         run: docker push 983851922138.dkr.ecr.eu-central-1.amazonaws.com/tippecanoe
-
-  upgrade-aws:
-    name: Start Upgrade AWS
-    runs-on: ubuntu-latest
-    needs: [ecr]
-    steps:
-      - uses: actions/checkout@v2
-      - uses: aws-actions/configure-aws-credentials@v1
-        name: Configure AWS Credentials
-        with:
-          aws-access-key-id: ${{ secrets.UPGRADE_AWS_PRODUCTION_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.UPGRADE_AWS_PRODUCTION_AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-central-1
-      - name: Start Upgrade AWS
-        run: 'aws stepfunctions start-execution --state-machine-arn "$(aws ssm get-parameter --name GitHubActionsUpgradeAwsStateMachine | jq ''.Parameter.Value'' -r)" --input ''{"Repository":"${{ github.repository }}","Branch":"''$(echo "${{ github.ref }}" | sed -e ''s/^refs.heads.//'')''","Revision":"${{ github.sha }}"}'''
