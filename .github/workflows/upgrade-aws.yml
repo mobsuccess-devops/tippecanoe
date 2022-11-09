@@ -22,7 +22,7 @@ jobs:
         run: |
           case ${{github.ref}} in
             refs/heads/master)
-              role=arn:aws:iam::885287155586:role/GHA,tippecanoe
+              role=arn:aws:iam::983851922138:role/GHA,tippecanoe
               branch=master
               ;;
             refs/heads/prod)
