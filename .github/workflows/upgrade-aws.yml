@@ -1,0 +1,85 @@
+on:
+  push:
+    branches:
+      - master
+name: Upgrade AWS
+env:
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+jobs:
+  prepare-ecr:
+    name: Prepare ECR
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/prod'
+    timeout-minutes: 1
+    outputs:
+      role: ${{ steps.prepare.outputs.role }}
+      branch: ${{ steps.prepare.outputs.branch }}
+    steps:
+      - name: Prepare
+        id: prepare
+        run: |
+          case ${{github.ref}} in
+            refs/heads/master)
+              role=arn:aws:iam::885287155586:role/GHA,tippecanoe
+              branch=master
+              ;;
+            refs/heads/prod)
+              role=arn:aws:iam::983851922138:role/GHA,tippecanoe
+              branch=prod
+              ;;
+            *)
+              echo "Unknown ref: ${{github.ref}}"
+              exit 1
+              ;;
+          esac
+          echo branch: $branch
+          echo role: $role
+          echo "::set-output name=branch::$branch"
+          echo "::set-output name=role::$role"
+  ecr:
+    name: ECR
+    runs-on: ubuntu-latest
+    needs: [prepare-ecr]
+    timeout-minutes: 15
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Docker Compose
+        run: |
+          if [ ! -f docker-compose.${{needs.prepare-ecr.outputs.branch}}.yml ]; then
+            echo 'version: "3.8"' > docker-compose.${{needs.prepare-ecr.outputs.branch}}.yml
+          fi
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - uses: aws-actions/configure-aws-credentials@v1
+        name: Configure AWS Credentials (eu-central-1)
+        with:
+          role-to-assume: ${{needs.prepare-ecr.outputs.role}}
+          aws-region: eu-central-1
+          role-duration-seconds: 900
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Build
+        run: docker-compose -f docker-compose.yml -f docker-compose.${{needs.prepare-ecr.outputs.branch}}.yml build --build-arg BUILDKIT_INLINE_CACHE=1
+      - name: Push
+        run: docker-compose -f docker-compose.yml -f docker-compose.${{needs.prepare-ecr.outputs.branch}}.yml push
+
+  upgrade-aws:
+    name: Start Upgrade AWS
+    runs-on: ubuntu-latest
+    needs: [ecr]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: aws-actions/configure-aws-credentials@v1
+        name: Configure AWS Credentials
+        with:
+          aws-access-key-id: ${{ secrets.UPGRADE_AWS_PRODUCTION_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.UPGRADE_AWS_PRODUCTION_AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+      - name: Start Upgrade AWS
+        run: 'aws stepfunctions start-execution --state-machine-arn "$(aws ssm get-parameter --name GitHubActionsUpgradeAwsStateMachine | jq ''.Parameter.Value'' -r)" --input ''{"Repository":"${{ github.repository }}","Branch":"''$(echo "${{ github.ref }}" | sed -e ''s/^refs.heads.//'')''","Revision":"${{ github.sha }}"}'''
