@@ -62,7 +62,7 @@ jobs:
       - name: Build
         run: docker build -t 983851922138.dkr.ecr.eu-central-1.amazonaws.com/tippecanoe:latest .
       - name: Push
-        docker push 983851922138.dkr.ecr.eu-central-1.amazonaws.com/tippecanoe
+        run: docker push 983851922138.dkr.ecr.eu-central-1.amazonaws.com/tippecanoe
 
   upgrade-aws:
     name: Start Upgrade AWS
