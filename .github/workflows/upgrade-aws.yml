@@ -48,11 +48,6 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v3
-      - name: Setup Docker Compose
-        run: |
-          if [ ! -f docker-compose.${{needs.prepare-ecr.outputs.branch}}.yml ]; then
-            echo 'version: "3.8"' > docker-compose.${{needs.prepare-ecr.outputs.branch}}.yml
-          fi
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v1
       - uses: aws-actions/configure-aws-credentials@v1
@@ -65,9 +60,9 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
       - name: Build
-        run: docker-compose -f docker-compose.yml -f docker-compose.${{needs.prepare-ecr.outputs.branch}}.yml build --build-arg BUILDKIT_INLINE_CACHE=1
+        run: docker build -t 983851922138.dkr.ecr.eu-central-1.amazonaws.com/tippecanoe:latest .
       - name: Push
-        run: docker-compose -f docker-compose.yml -f docker-compose.${{needs.prepare-ecr.outputs.branch}}.yml push
+        docker push 983851922138.dkr.ecr.eu-central-1.amazonaws.com/tippecanoe
 
   upgrade-aws:
     name: Start Upgrade AWS
