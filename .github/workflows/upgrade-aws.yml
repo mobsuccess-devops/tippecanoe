@@ -2,7 +2,6 @@ on:
   push:
     branches:
       - master
-      - feat/aarch64 # DO NOT MERGE
 name: Upgrade AWS
 env:
   DOCKER_BUILDKIT: 1
@@ -12,7 +11,7 @@ jobs:
   prepare-ecr:
     name: Prepare ECR
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/prod' || github.ref == 'refs/heads/feat/aarch64' # DO NOT MERGE
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/prod'
     timeout-minutes: 1
     outputs:
       role: ${{ steps.prepare.outputs.role }}
@@ -29,10 +28,6 @@ jobs:
             refs/heads/prod)
               role=arn:aws:iam::983851922138:role/GHA,tippecanoe
               branch=prod
-              ;;
-            refs/heads/feat/aarch64) # DO NOT MERGE
-              role=arn:aws:iam::983851922138:role/GHA,tippecanoe
-              branch=master
               ;;
             *)
               echo "Unknown ref: ${{github.ref}}"
