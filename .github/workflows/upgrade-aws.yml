@@ -12,7 +12,7 @@ jobs:
   prepare-ecr:
     name: Prepare ECR
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/prod'
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/prod' || github.ref == 'refs/heads/feat/aarch64'
     timeout-minutes: 1
     outputs:
       role: ${{ steps.prepare.outputs.role }}
