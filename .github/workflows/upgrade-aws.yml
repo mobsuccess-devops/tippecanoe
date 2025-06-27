@@ -2,6 +2,7 @@ on:
   push:
     branches:
       - master
+      - feat/aarch64 # DO NOT MERGE
 name: Upgrade AWS
 env:
   DOCKER_BUILDKIT: 1
